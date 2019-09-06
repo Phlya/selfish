@@ -403,8 +403,8 @@ def DCI(f1,
         p_vals = norm.cdf(d_diff[non_zero_indices],
                           loc=params[0],
                           scale=params[1])
-        p_vals[p_vals > 0.5] = 1 - p_vals[p_vals > 0.5]
-        p_vals *= 2
+        #p_vals[p_vals > 0.5] = 1 - p_vals[p_vals > 0.5]
+        #p_vals *= 2
         final_p[p_vals < final_p] = p_vals[p_vals < final_p]
         d_pre = d_post.copy()
         count += 1
