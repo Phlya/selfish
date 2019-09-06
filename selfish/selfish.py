@@ -333,16 +333,18 @@ def DCI(f1,
         a = np.tril(a, distance_filter // res)
         b = np.tril(b, distance_filter // res)
 
-    tmp_n = max(max(a.shape), max(b.shape))
-    tmp = np.zeros((tmp_n, tmp_n))
-    tmp[:a.shape[0], :a.shape[1]] = a
-    a = tmp.copy()
-    tmp = np.zeros((tmp_n, tmp_n))
-    tmp[:b.shape[0], :b.shape[1]] = b
-    b = tmp.copy()
-    tmp = None
 
-    non_zero_indices = np.logical_and(a != 0, b != 0)
+# Why is this needed?
+#    tmp_n = max(max(a.shape), max(b.shape))
+#    tmp = np.zeros((tmp_n, tmp_n))
+#    tmp[:a.shape[0], :a.shape[1]] = a
+#    a = tmp.copy()
+#    tmp = np.zeros((tmp_n, tmp_n))
+#    tmp[:b.shape[0], :b.shape[1]] = b
+#    b = tmp.copy()
+#    tmp = None
+
+    non_zero_indices = np.where(np.logical_and(a != 0, b != 0))
 
     if plot_results:
         plt.clf()
@@ -389,9 +391,10 @@ def DCI(f1,
 
 
     size = a.shape[0]
-    b -= a
+#    b -= a
     #a = None
-    diff = b.copy()
+    diff = b - a#.copy()
+    del a, b
     #b = None
     d_pre = gaussian_filter(diff, scales[0])
     count = 1
@@ -409,13 +412,11 @@ def DCI(f1,
         d_pre = d_post.copy()
         count += 1
 
-    d_diff = None
+    del d_diff
     o = np.ones(diff.shape, dtype=dt)
     diff = None
-    _, out_p = smm.multipletests(final_p, method='fdr_bh')[:2]
 
-    o[non_zero_indices] = out_p
-    o[o == 0] = 1
+    o[non_zero_indices] = smm.multipletests(final_p, method='fdr_bh')[1]
     if plot_results:
         plt.clf()
         sns.heatmap(np.abs(np.log10(o)))
@@ -472,7 +473,7 @@ def readHiCFile(f, chr, res):
     o = np.zeros((n, n)) + 1
     o[x, y] = val
     o[y, x] = val
-    return o
+    return np.triu(o)
 
 def readCoolFile(f, chr):
     """
@@ -481,7 +482,7 @@ def readCoolFile(f, chr):
     :return: Numpy matrix of contact counts
     """
     clr = cooler.Cooler(f)
-    result = clr.matrix(balance=True).fetch(chr)
+    result = np.triu(clr.matrix(balance=True).fetch(chr))
     result[np.isnan(result)] = 0
     return result
 
@@ -494,7 +495,7 @@ def readMultiCoolFile(f, chr, res):
     """
     uri = '%s::/resolutions/%s' % (f, res)
     clr = cooler.Cooler(uri)
-    result = clr.matrix(balance=True).fetch(chr)
+    result = np.triu(clr.matrix(balance=True).fetch(chr))
     result[np.isnan(result)] = 0
     return result
 
